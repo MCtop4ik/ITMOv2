@@ -24,8 +24,8 @@
                       "search_query": 0.018
                     }
                 },
-                "anthropic/claude-sonnet-4": {
-                    "name": "anthropic/claude-sonnet-4"
+                "anthropic/claude-opus-5": {
+                    "name": "anthropic/claude-opus-5"
                 }
             }
         }
