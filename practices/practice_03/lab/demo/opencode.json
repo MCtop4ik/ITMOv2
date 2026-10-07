@@ -12,6 +12,8 @@
       "models": {
         "itmo-agent": {
           "name": "ITMO local 64k",
+          "tag": "itmo-agent:latest",
+          "quantization": "Q8_0",
           "limit": {
             "context": 65536,
             "output": 4096
@@ -35,4 +37,3 @@
     }
   }
 }
-
