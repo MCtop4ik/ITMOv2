@@ -40,14 +40,6 @@
         "@playwright/mcp@latest"
       ],
       "enabled": true
-    },
-    "simple-adder": {
-      "type": "local",
-      "command": [
-        "/home/senya/Desktop/Projects/ITMOv2/practices/mcp/.venv/bin/python",
-        "/home/senya/Desktop/Projects/ITMOv2/practices/mcp/main.py"
-      ],
-      "enabled": true
     }
   },
   "permission": {
