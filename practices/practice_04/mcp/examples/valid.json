@@ -1,0 +1,6 @@
+{
+  "name": "Croissant",
+  "price": 3.5,
+  "tags": ["bakery", "butter"],
+  "available": true
+}
