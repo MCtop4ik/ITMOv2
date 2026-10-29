@@ -35,19 +35,19 @@ Validation
 ```mermaid
 flowchart TB
 
-  subgraph Client[Client / Untrusted Input]
+  subgraph Client
     U[User]
-    LLM[LLM Planner (no tools)]
+    LLM[LLM Planner - no tools]
   end
 
-  subgraph Service[Mini Shop Service]
+  subgraph Service
     H[HTTP Handler]
     S[Business Logic]
     EXEC[Assistant Executor]
   end
 
-  subgraph DataStores[Data Stores]
-    DB[(SQLite in-memory)]
+  subgraph DataStores
+    DB[(SQLite)]
     FS[(Sandbox files root)]
   end
 
@@ -58,22 +58,22 @@ flowchart TB
   S --> EXEC
   LLM -->|decision JSON| EXEC
 
-  EXEC -->|read_file(path)| FS
-  EXEC -->|export_profiles()| DB
-  EXEC -->|delete_tree(path)| FS
+  EXEC -->|read_file| FS
+  EXEC -->|export_profiles| DB
+  EXEC -->|delete_tree| FS
 
   %% Threats (attack surface)
-  H -- SQL Injection --> S
-  S -- IDOR (profile/orders/files) --> DB
+  H -- SQL injection --> S
+  S -- IDOR profile/orders/files --> DB
   S -- XSS via reviews/view --> H
-  H -- Token leakage in logs --> S
-  EXEC -- Tool abuse (read/export/delete) --> FS
-  EXEC -- Tool abuse (export) --> DB
+  S -- Token leakage in logs --> H
+  EXEC -- Tool abuse read/export/delete --> FS
+  EXEC -- Tool abuse export --> DB
 
   %% Mitigations (key controls)
   S -. Param queries, session-bound IDs .-> DB
   S -. HTML-escape reviews .-> H
-  S -. Staff-only authorization (server-side) .-> DB
+  S -. Staff-only authorization .-> DB
   S -. Enforce catalog price .-> DB
   EXEC -. Allowlist paths & roles .-> FS
   EXEC -. Staff-only tools .-> DB
@@ -84,18 +84,18 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  subgraph Boundary1[Boundary: Client]
+  subgraph Client
     C1[Browser/User]
     C2[LLM Planner]
   end
 
-  subgraph Boundary2[Boundary: Service Process]
+  subgraph Service
     B1[HTTP Handler]
     B2[Business Logic]
     B3[Assistant Executor]
   end
 
-  subgraph Boundary3[Boundary: Sandbox/DB]
+  subgraph Data
     D1[(SQLite)]
     D2[(Sandbox FS)]
   end
@@ -111,5 +111,5 @@ flowchart LR
   B2 -- authZ by session, param SQL, HTML escape --> D1
   B2 -- per-user path policy --> D2
   B3 -- tool allowlist + role checks --> D1
-  B3 -- path allowlist (files/<user>/receipt.txt, files/* for staff delete) --> D2
+  B3 -- path allowlist files/user/receipt.txt and files/* for staff delete --> D2
 ```
