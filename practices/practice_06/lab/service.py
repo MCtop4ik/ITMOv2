@@ -43,9 +43,16 @@ class Shop:
     def dispatch(self, method, target, body, headers):
         url = urlsplit(target)
         query = {k: v[0] for k, v in parse_qs(url.query, keep_blank_values=True).items()}
-        # Store minimal request info; redact sensitive headers
+        # Store minimal request info; redact sensitive headers and secrets in body
         redacted_headers = {k: ("<redacted>" if k.lower() in {"x-token"} else v) for k, v in dict(headers).items()}
-        self.logs.append({"method": method, "target": target, "body": body, "headers": redacted_headers})
+        log_body = body
+        try:
+            if method == "POST" and url.path == "/login" and isinstance(body, dict) and "password" in body:
+                log_body = {**body, "password": "<redacted>"}
+        except Exception:
+            # Best-effort logging
+            log_body = body
+        self.logs.append({"method": method, "target": target, "body": log_body, "headers": redacted_headers})
 
         def get_session():
             return self.sessions.get(headers.get("X-Token"))
