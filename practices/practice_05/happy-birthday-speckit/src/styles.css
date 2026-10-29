@@ -1,0 +1,268 @@
+/*
+ * RawBlock (DESIGN.md): black on white, 0 radius, no shadows, borders carry hierarchy.
+ * DESIGN.md fonts (Archivo Black, Work Sans, Space Mono) have no Cyrillic, so the closest
+ * Cyrillic families stand in: Dela Gothic One, Golos Text, IBM Plex Mono.
+ */
+:root {
+  --black: #000;
+  --white: #fff;
+  --link: #0000ff;
+  --success: #008000;
+  --warning: #ffa500;
+  --error: #ff0000;
+  --sunken: #f0f0f0;
+  --muted: #555;
+  --disabled: #ccc;
+
+  --font-head: 'Dela Gothic One', 'Archivo Black', Impact, sans-serif;
+  --font-body: 'Golos Text', 'Work Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Space Mono', ui-monospace, monospace;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 16px;
+  --sp-4: 24px;
+  --sp-5: 40px;
+  --sp-6: 64px;
+  --sp-7: 80px;
+
+  --border-thin: 1px solid var(--black);
+  --border: 3px solid var(--black);
+  --border-heavy: 5px solid var(--black);
+
+  /* Motion: built-in ease-out is too weak for UI (specs/002 R2). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+html {
+  color: var(--black);
+  background: var(--white);
+  font: 16px/1.6 var(--font-body);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-head);
+  font-weight: 400;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  font-size: clamp(40px, 9vw, 64px);
+  line-height: 1;
+}
+
+h2 {
+  font-size: clamp(30px, 6vw, 48px);
+  line-height: 1.05;
+}
+
+h3 {
+  font-size: clamp(22px, 4vw, 32px);
+  line-height: 1.1;
+}
+
+a {
+  color: var(--link);
+}
+
+:focus-visible {
+  outline: 3px solid var(--black);
+  outline-offset: 3px;
+}
+
+.inverted {
+  background: var(--black);
+  color: var(--white);
+}
+
+.inverted :focus-visible {
+  outline-color: var(--white);
+}
+
+/* Buttons: uppercase + tracking is the DESIGN.md raw voice for actions. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 24px;
+  border: var(--border);
+  background: var(--black);
+  color: var(--white);
+  font: 600 14px/1.2 var(--font-body);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  /* Press feedback only; hover stays an instant colour swap (specs/002 M1). */
+  transition: transform 160ms var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--white);
+  color: var(--black);
+}
+
+.btn:active {
+  border-width: 5px;
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  background: var(--white);
+  color: var(--black);
+}
+
+.btn-secondary:hover {
+  background: var(--black);
+  color: var(--white);
+}
+
+.btn-small {
+  min-height: 44px;
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+.btn-ghost {
+  border: 0;
+  background: transparent;
+  color: var(--black);
+  text-decoration: underline;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 10px 4px;
+}
+
+.btn-ghost:hover {
+  background: transparent;
+  color: var(--link);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 12px;
+  border: 2px solid var(--black);
+  background: var(--white);
+  color: var(--black);
+  font: 600 12px/1.2 var(--font-body);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'],
+.chip:hover {
+  background: var(--black);
+  color: var(--white);
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 2px solid var(--black);
+  font: 600 11px/1.4 var(--font-body);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag-inverse {
+  background: var(--black);
+  color: var(--white);
+}
+
+.inverted .tag {
+  border-color: var(--white);
+}
+
+.inverted .tag-inverse {
+  background: var(--white);
+  color: var(--black);
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: var(--border);
+  background: var(--sunken);
+  color: var(--black);
+  font: 15px/1.5 var(--font-mono);
+}
+
+.input:hover {
+  background: #e8e8e8;
+}
+
+.input:focus {
+  outline: none;
+  border-width: 5px;
+  padding: 8px 10px;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font: 14px/1.2 var(--font-head);
+  text-transform: uppercase;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error-text {
+  color: var(--error);
+}
+
+.page {
+  padding: var(--sp-5) var(--sp-4) var(--sp-7);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: var(--sp-4) var(--sp-3) var(--sp-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
