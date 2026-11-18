@@ -1,0 +1,517 @@
+{
+  "name": "Workflow Issues 7.2",
+  "nodes": [
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "events": [
+          "issues"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "36d7fa1d-b345-48cd-8a4c-ab5356537dcb",
+      "name": "Github Trigger",
+      "webhookId": "146781d7-fa9e-4404-9066-4393b58fba83",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "011b98a0-c59d-4efc-9e9f-8a3978c1d6d9",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "opened",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "d88f96ef-8df5-49fa-8615-616967d5759f",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "reopened",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        240,
+        0
+      ],
+      "id": "b618d51e-90b0-49ad-84dc-780e66accc2a",
+      "name": "If opened"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "bug",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "13edb19e-39a2-47c3-979e-522cb273dcef"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bug"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "task",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4569ca5d-d810-4a8d-a2a0-3529c1e18505"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "feature",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "09ae8d19-70a7-4cdd-96da-1a580a98dfee"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "feature"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "82d76d67-10ff-4d4e-b269-b740b8a77d0b",
+      "name": "Switch Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        912,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "issueNumber": "={{ $('Github Trigger').item.json.body.issue.number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "Bug"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        -160
+      ],
+      "id": "a6683f36-59b0-4697-bedb-1aa3d12cc655",
+      "name": "Set label Bug",
+      "webhookId": "ce25d25f-0650-4714-8138-c04bee966829",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "issueNumber": "={{ $('Github Trigger').item.json.body.issue.number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "feature"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        144
+      ],
+      "id": "5f33a7b9-de49-4aeb-890e-c2d6bfa35766",
+      "name": "Set label feature",
+      "webhookId": "ce25d25f-0650-4714-8138-c04bee966829",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "issueNumber": "={{ $('Github Trigger').item.json.body.issue.number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "task"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        -16
+      ],
+      "id": "7e08c9c5-449b-4d99-9a8f-7475329e8818",
+      "name": "Set label task",
+      "webhookId": "ce25d25f-0650-4714-8138-c04bee966829",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "b7fe36bc-7a08-48e3-9677-18d84926b2aa",
+              "leftValue": "={{ $json.confidence }}",
+              "rightValue": 0.8,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "a348072f-c8de-4e83-a6f7-d928da8c371d",
+      "name": "Check prob"
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "issueNumber": "={{ $('Github Trigger').item.json.body.issue.number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "needs-triage"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        352
+      ],
+      "id": "085b7556-ab53-4874-be95-a0d0d34278d7",
+      "name": "Set label need-triage",
+      "webhookId": "ce25d25f-0650-4714-8138-c04bee966829",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "OL3nCbJKzlLQzrpN",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/OL3nCbJKzlLQzrpN",
+          "cachedResultName": "Classificator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.body.issue.title }}",
+            "body": "={{ $json.body.issue.body }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        496,
+        -16
+      ],
+      "id": "8dc792aa-23f8-48ba-924f-a75d7c85a784",
+      "name": "Classificate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "If opened",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If opened": {
+      "main": [
+        [
+          {
+            "node": "Classificate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Type": {
+      "main": [
+        [
+          {
+            "node": "Set label Bug",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set label task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set label feature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check prob": {
+      "main": [
+        [
+          {
+            "node": "Switch Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set label need-triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificate": {
+      "main": [
+        [
+          {
+            "node": "Check prob",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dacd370a-0e95-4600-ad85-34266ee803e2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68dbbb4e8fa686c3fd4e9982ade6836edb66976f207553e7ac22df961581c78c"
+  },
+  "nodeGroups": [],
+  "id": "hCiqTvQ7b2O2xSjQ",
+  "tags": []
+}

@@ -1,0 +1,104 @@
+{
+  "name": "Classificator",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "title"
+            },
+            {
+              "name": "body"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        352
+      ],
+      "id": "3155ef6c-f8ba-4d7d-a934-d14a41c61ec2",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepseek.com/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "deepSeekApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"deepseek-chat\",\n  messages: [\n    {\n      role: \"system\",\n      content: \"Ты строгий классификатор. Отвечай ТОЛЬКО одной заглавной латинской буквой без пробелов и знаков:\\nA — bug (ошибка, сбой, падение, баг)\\nB — task (рутинная задача, настройка, доступ, вопрос)\\nC — feature (новый функционал, улучшение, пожелание) D — unclear (если в задаче смешаны разные типы, например баг и фича одновременно, или не хватает данных)\"\n    },\n    {\n      role: \"user\",\n      content: $json.text || $json.body?.text || JSON.stringify($json)\n    }\n  ],\n  max_tokens: 1,\n  temperature: 0.8,\n  logprobs: true,\n  top_logprobs: 5\n}) }}",
+        "options": {}
+      },
+      "id": "fa3b0a40-ba87-4a0c-a61d-19915fbb6f60",
+      "name": "DeepSeek Jev Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        352
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "rbNPxJS3WKgQKY5U",
+          "name": "DeepSeek account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const response = $input.item.json;\n\nconst logprobsContent = response?.choices?.[0]?.logprobs?.content?.[0];\nconst topLogprobs = logprobsContent?.top_logprobs || [];\n\nconst map = { A: \"bug\", B: \"task\", C: \"feature\", D: \"unclear\" };\nconst probs = { bug: 0, task: 0, feature: 0, unclear: 0 };\n\nif (topLogprobs.length > 0) {\n  for (const item of topLogprobs) {\n    const token = (item.token || \"\").trim().toUpperCase();\n    if (map[token]) {\n      probs[map[token]] += Math.exp(item.logprob);\n    }\n  }\n} else {\n  const rawLetter = (response?.choices?.[0]?.message?.content || \"\").trim().toUpperCase();\n  if (map[rawLetter]) {\n    probs[map[rawLetter]] = 1;\n  }\n}\n\nconst total = probs.bug + probs.task + probs.feature + probs.unclear || 1;\nconst normalized = {\n  bug: probs.bug / total,\n  task: probs.task / total,\n  feature: probs.feature / total,\n  unclear: probs.unclear / total\n};\n\nlet bestType = \"unclear\";\nlet bestConfidence = 0;\n\nfor (const [type, conf] of Object.entries(normalized)) {\n  if (conf > bestConfidence) {\n    bestType = type;\n    bestConfidence = conf;\n  }\n}\n\nif (bestType === \"unclear\") {\n  bestConfidence = 0;\n}\n\nreturn {\n  json: {\n    type: bestType,\n    confidence: Number(bestConfidence.toFixed(4)),\n    probabilities: {\n      bug: Number(normalized.bug.toFixed(4)),\n      task: Number(normalized.task.toFixed(4)),\n      feature: Number(normalized.feature.toFixed(4)),\n      unclear: Number(normalized.unclear.toFixed(4))\n    }\n  }\n};\n"
+      },
+      "id": "e108a01e-e9e8-4e59-89cf-fede7ae9a542",
+      "name": "Parse Confidence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        352
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek Jev Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Jev Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Confidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d7450ba8-d780-4426-b342-afbc08d4e043",
+  "meta": {
+    "instanceId": "68dbbb4e8fa686c3fd4e9982ade6836edb66976f207553e7ac22df961581c78c"
+  },
+  "nodeGroups": [],
+  "id": "OL3nCbJKzlLQzrpN",
+  "tags": []
+}
