@@ -1,0 +1,483 @@
+{
+  "name": "Weekly Github Statistics",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * MON"
+            }
+          ]
+        }
+      },
+      "id": "9a48e781-e7c6-4412-af41-85d72d70e680",
+      "name": "Every Monday 9:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "oVvykz2171bQjaKj",
+          "mode": "list",
+          "cachedResultName": "weekly_github_stats",
+          "cachedResultUrl": "/projects/0spQGeayGgE9fWmU/datatables/oVvykz2171bQjaKj"
+        }
+      },
+      "id": "97e9a3aa-b51d-4870-8cdf-29984b051edf",
+      "name": "Read Previous Week",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        -704
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const cur = $('Group Stats & Build HTML').first().json;\n\nlet prevRow = null;\ntry {\n  const rows = $('Read Previous Week').all();\n  prevRow = rows.length ? rows[0].json : null;\n} catch (e) {\n  prevRow = null;\n}\n\nconst parseJson = (v, fallback) => {\n  if (v === null || v === undefined || v === '') return fallback;\n  if (typeof v === 'object') return v;\n  try { return JSON.parse(v); } catch (e) { return fallback; }\n};\n\nconst prev = prevRow ? {\n  totalIssues: Number(prevRow.total_issues) || 0,\n  byType: parseJson(prevRow.by_type, { Bug: 0, Task: 0, Feature: 0, 'needs-triage': 0 }),\n  byAuthor: parseJson(prevRow.by_author, {})\n} : null;\n\nconst delta = {\n  totalIssues: prev ? cur.totalIssues - prev.totalIssues : null,\n  byType: Object.fromEntries(\n    Object.keys(cur.byType).map(k => [k, prev ? cur.byType[k] - (prev.byType[k] || 0) : null])\n  )\n};\n\nconst prompt = `Ты — аналитик проекта. Составь краткий (3–4 предложения) деловой комментарий недели по статистике GitHub Issues на русском языке.\n\nТекущая неделя (${cur.week_start} — ${cur.week_end}):\n- Всего новых задач: ${cur.totalIssues}\n- По типам: ${JSON.stringify(cur.byType)}\n\nПрошлая неделя:\n${prev ? `- Всего: ${prev.totalIssues}\\n- По типам: ${JSON.stringify(prev.byType)}` : '- Данных за прошлую неделю нет (первый запуск)'}\n\nΔ к прошлой неделе:\n${prev ? `- Всего: ${delta.totalIssues}\\n- По типам: ${JSON.stringify(delta.byType)}` : '- Δ не рассчитывается'}\n\nОпиши динамику: что выросло, что упало, на что обратить внимание. Не выдумывай цифры, используй только данные выше. Без заголовков и списков — сплошной текст.`;\n\nreturn [{\n  json: {\n    ...cur,\n    prev,\n    delta,\n    prompt\n  }\n}];"
+      },
+      "id": "3a339aa3-f389-44b7-9d16-35d21e5d58b7",
+      "name": "Compute Delta & Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "weekly_github_stats",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "week_start": "={{ $('Compute Delta & Build Prompt').first().json.week_start }}",
+            "week_end": "={{ $('Compute Delta & Build Prompt').first().json.week_end }}",
+            "total_issues": "={{ $('Compute Delta & Build Prompt').first().json.totalIssues }}",
+            "by_type": "={{ JSON.stringify($('Compute Delta & Build Prompt').first().json.byType) }}",
+            "by_author": "={{ JSON.stringify($('Compute Delta & Build Prompt').first().json.byAuthor) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "40e0e67e-b971-4199-a5fb-bf211d091788",
+      "name": "Save This Week",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cur = $('Compute Delta & Build Prompt').first().json;\nconst aiText = $('AI Agent').first().json.output\nconst aiComment = (typeof aiText === 'string' ? aiText : JSON.stringify(aiText)).trim() || 'AI-комментарий недоступен.';\n\nconst delta = cur.delta || { totalIssues: null, byType: {} };\nconst prev = cur.prev;\n\nconst fmtDelta = (d) => {\n  if (d === null || d === undefined) return '—';\n  if (d > 0) return `+${d}`;\n  return `${d}`;\n};\nconst deltaColor = (d) => {\n  if (d === null || d === undefined) return '#666';\n  if (d > 0) return '#c0392b';\n  if (d < 0) return '#27ae60';\n  return '#333';\n};\n\nconst typeRows = Object.entries(cur.byType)\n  .map(([type, count]) => `<tr><td style=\"padding:8px;border:1px solid #ddd;\"><b>${type}</b></td><td style=\"padding:8px;border:1px solid #ddd;text-align:center;\">${count}</td></tr>`)\n  .join('');\n\nconst deltaRows = Object.entries(delta.byType)\n  .map(([type, d]) => `<tr><td style=\"padding:8px;border:1px solid #ddd;\"><b>${type}</b></td><td style=\"padding:8px;border:1px solid #ddd;text-align:center;color:${deltaColor(d)};\"><b>${fmtDelta(d)}</b></td></tr>`)\n  .join('');\n\nconst authorRows = Object.entries(cur.byAuthor || {})\n  .sort((a, b) => b[1].total - a[1].total)\n  .map(([author, stats]) => `\n    <tr>\n      <td style=\"padding:8px;border:1px solid #ddd;\">@${author}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;text-align:center;\">${stats.Bug}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;text-align:center;\">${stats.Task}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;text-align:center;\">${stats.Feature}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;text-align:center;\">${stats['needs-triage']}</td>\n      <td style=\"padding:8px;border:1px solid #ddd;text-align:center;\"><b>${stats.total}</b></td>\n    </tr>`)\n  .join('') || '<tr><td colspan=\"6\" style=\"padding:8px;border:1px solid #ddd;text-align:center;\">За прошедшую неделю новых задач не создавалось</td></tr>';\n\nconst prevLine = prev\n  ? `<p style=\"color:#666;\">Прошлая неделя: всего <b>${prev.totalIssues}</b> задач. Δ всего: <b style=\"color:${deltaColor(delta.totalIssues)};\">${fmtDelta(delta.totalIssues)}</b></p>`\n  : `<p style=\"color:#666;\">Данных за прошлую неделю нет — это первый запуск, Δ не рассчитывается.</p>`;\n\nconst htmlReport = `\n<div style=\"font-family: Arial, sans-serif; color: #333; max-width: 650px;\">\n  <h2>Еженедельный отчёт по GitHub Issues</h2>\n  <p>Период: <b>${cur.week_start}</b> — <b>${cur.week_end}</b></p>\n  <p>Всего новых задач за неделю: <b>${cur.totalIssues}</b></p>\n  ${prevLine}\n\n  <h3>1. Статистика по типам</h3>\n  <table style=\"border-collapse: collapse; width: 100%; margin-bottom: 24px;\">\n    <thead>\n      <tr style=\"background-color: #f4f6f8;\">\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:left;\">Тип (Label)</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Количество</th>\n      </tr>\n    </thead>\n    <tbody>${typeRows}</tbody>\n  </table>\n\n  <h3>2. Δ к прошлой неделе</h3>\n  <table style=\"border-collapse: collapse; width: 100%; margin-bottom: 24px;\">\n    <thead>\n      <tr style=\"background-color: #f4f6f8;\">\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:left;\">Тип (Label)</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Δ</th>\n      </tr>\n    </thead>\n    <tbody>${deltaRows}</tbody>\n  </table>\n\n  <h3>3. Активность по авторам</h3>\n  <table style=\"border-collapse: collapse; width: 100%; margin-bottom: 24px;\">\n    <thead>\n      <tr style=\"background-color: #f4f6f8;\">\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:left;\">Автор</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Bug</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Task</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Feature</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Triage</th>\n        <th style=\"padding:8px;border:1px solid #ddd;text-align:center;\">Всего</th>\n      </tr>\n    </thead>\n    <tbody>${authorRows}</tbody>\n  </table>\n\n  <h3>4. AI-комментарий недели</h3>\n  <div style=\"padding:12px 16px;background:#f9f9f9;border-left:4px solid #4a90d9;line-height:1.5;\">\n    ${aiComment.replace(/\\n/g, '<br>')}\n  </div>\n</div>\n`;\n\nreturn [{\n  json: {\n    subject: `GitHub Weekly Report — ${cur.week_start} / ${cur.week_end}`,\n    totalIssues: cur.totalIssues,\n    byType: cur.byType,\n    byAuthor: cur.byAuthor,\n    delta: cur.delta,\n    aiComment,\n    htmlReport\n  }\n}];"
+      },
+      "id": "88679bc5-4a9a-45ce-90b8-17d8671dc1a2",
+      "name": "Assemble Final HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {
+          "systemMessage": "Ты пишешь короткий деловой комментарий на русском языке. Отвечай только текстом комментария, без вступлений и заголовков."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1040,
+        -704
+      ],
+      "id": "ba9bcc52-f07e-4e3d-9fe8-219ec00aef03",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        992,
+        -512
+      ],
+      "id": "414785a4-6f27-42db-ac5c-937c6c79c21f",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "rbNPxJS3WKgQKY5U",
+          "name": "DeepSeek account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "senyaza-itmo@mail.ru",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.htmlReport }}",
+        "options": {}
+      },
+      "id": "c5ce6bc9-ea41-4acf-a596-76306a7afc2f",
+      "name": "Send Weekly Report by Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1888,
+        -704
+      ],
+      "webhookId": "fa80499c-c0e4-428e-a362-67a709435125",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CCA2LqrtV8REPDLb",
+          "name": "Gmail account 12"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const weekStart = $now.startOf('week');\nconst weekEnd = $now.endOf('week');\n\nconst getIssues = (nodeName) => {\n  try {\n    return $(nodeName).all()\n      .map(i => i.json)\n      .filter(item => item && item.id && !item.pull_request && new Date(item.created_at) >= new Date(weekStart.toISO()));\n  } catch (e) {\n    return [];\n  }\n};\n\nconst groups = {\n  Bug: getIssues('Get Bugs1'),\n  Task: getIssues('Get Tasks1'),\n  Feature: getIssues('Get Features1'),\n  'needs-triage': getIssues('Get Needs Triage1')\n};\n\nconst byType = {\n  Bug: groups.Bug.length,\n  Task: groups.Task.length,\n  Feature: groups.Feature.length,\n  'needs-triage': groups['needs-triage'].length\n};\n\nconst byAuthor = {};\nconst seenIds = new Set();\n\nfor (const [type, issues] of Object.entries(groups)) {\n  for (const issue of issues) {\n    const author = issue.user?.login || 'unknown';\n    if (!byAuthor[author]) {\n      byAuthor[author] = { Bug: 0, Task: 0, Feature: 0, 'needs-triage': 0, total: 0 };\n    }\n    byAuthor[author][type] += 1;\n\n    if (!seenIds.has(`${author}_${issue.id}`)) {\n      seenIds.add(`${author}_${issue.id}`);\n      byAuthor[author].total += 1;\n    }\n  }\n}\n\nconst totalIssues = Object.values(byType).reduce((a, b) => a + b, 0);\n\nreturn [{\n  json: {\n    week_start: weekStart.toISODate(),\n    week_end: weekEnd.toISODate(),\n    totalIssues,\n    byType,\n    byAuthor\n  }\n}];"
+      },
+      "id": "613a2217-18d9-4bce-90da-c4b3703cf7c7",
+      "name": "Group Stats & Build HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "dfe5a568-704d-46db-b36b-9b7e54b2133f",
+      "name": "Wait All 4 Requests",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        80,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/MCtop4ik/ITMOv2/issues?state=all&labels=Bug&since={{ $now.minus({weeks: 1}).startOf('week').toISO() }}&per_page=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d68311b3-1940-4878-a39c-1e32f866c3ee",
+      "name": "Get Bugs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -1024
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/MCtop4ik/ITMOv2/issues?state=all&labels=Task&since={{ $now.minus({weeks: 1}).startOf('week').toISO() }}&per_page=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7556d559-2bec-40f2-8929-f3c22354641d",
+      "name": "Get Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -816
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/MCtop4ik/ITMOv2/issues?state=all&labels=Feature&since={{ $now.minus({weeks: 1}).startOf('week').toISO() }}&per_page=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0b9a6000-82ae-411b-83e5-0a78f32bb442",
+      "name": "Get Features",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -608
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/MCtop4ik/ITMOv2/issues?state=all&labels=needs-triage&since={{ $now.minus({weeks: 1}).startOf('week').toISO() }}&per_page=100",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f8e82d3d-bb49-4881-a713-b04f720f7569",
+      "name": "Get Needs Triage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -416
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 9:00": {
+      "main": [
+        [
+          {
+            "node": "Get Bugs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Tasks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Features",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Needs Triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Previous Week": {
+      "main": [
+        [
+          {
+            "node": "Compute Delta & Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Delta & Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save This Week": {
+      "main": [
+        [
+          {
+            "node": "Assemble Final HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Final HTML": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Report by Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Save This Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group Stats & Build HTML": {
+      "main": [
+        [
+          {
+            "node": "Read Previous Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait All 4 Requests": {
+      "main": [
+        [
+          {
+            "node": "Group Stats & Build HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bugs": {
+      "main": [
+        [
+          {
+            "node": "Wait All 4 Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tasks": {
+      "main": [
+        [
+          {
+            "node": "Wait All 4 Requests",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Features": {
+      "main": [
+        [
+          {
+            "node": "Wait All 4 Requests",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Get Needs Triage": {
+      "main": [
+        [
+          {
+            "node": "Wait All 4 Requests",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b6af854a-d143-4aac-8151-33352b364236",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68dbbb4e8fa686c3fd4e9982ade6836edb66976f207553e7ac22df961581c78c"
+  },
+  "nodeGroups": [],
+  "id": "t8DOMzU06Zh1gWos",
+  "tags": []
+}
