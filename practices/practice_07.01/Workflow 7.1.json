@@ -1,0 +1,797 @@
+{
+  "name": "Workflow 7.1",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "issueNumber": "={{ $('Webhook').item.json.body.issue.number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "AI Reviewed"
+            }
+          ]
+        }
+      },
+      "id": "8e1130a7-871f-4ac4-8177-efebc39241bf",
+      "name": "Add Label to PR1",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        1312,
+        240
+      ],
+      "webhookId": "70d2db56-965b-4f1f-817c-1fbb311320c0",
+      "typeVersion": 1,
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "deepseek-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        160,
+        320
+      ],
+      "id": "33a81663-935c-4f7a-b567-ef8dcff23294",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "rbNPxJS3WKgQKY5U",
+          "name": "DeepSeek account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-review",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -1424,
+        144
+      ],
+      "id": "5c017e3c-2ab2-4569-bd46-5bbd53fe53f0",
+      "name": "Webhook",
+      "webhookId": "24f90c1d-5970-4caa-9e0e-8128893c0ac5"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.issue.pull_request.diff_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3.diff"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9d689ecf-56b9-4cae-8beb-14fe6fc982fb",
+      "name": "Get file's PR info",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -208,
+        -16
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.comment.body }}",
+                    "rightValue": "/make_ai_review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "81bc18d7-d6ac-41b4-97af-42f18f327b76"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "First AI Review"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "70fba528-71ef-4ae4-9e4c-8a3e4cd668da",
+                    "leftValue": "={{ $json.body.comment.body }}",
+                    "rightValue": "/make_other_ai_review",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Other AI Review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "1346565f-e245-4cb8-9f00-be52f8673fa7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "ucNaZs8YlNpzIRbb",
+          "mode": "list",
+          "cachedResultName": "Reviewed PRs",
+          "cachedResultUrl": "/projects/0spQGeayGgE9fWmU/datatables/ucNaZs8YlNpzIRbb"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pr_id": "={{ $('Webhook').item.json.body.issue.number }}"
+          },
+          "matchingColumns": [
+            "pr_id"
+          ],
+          "schema": [
+            {
+              "id": "pr_id",
+              "displayName": "pr_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        -32
+      ],
+      "id": "8ae9d306-640e-4f56-bdf1-916dbef585d4",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "resource": "review",
+        "owner": {
+          "__rl": true,
+          "value": "MCtop4ik",
+          "mode": "list",
+          "cachedResultName": "MCtop4ik",
+          "cachedResultUrl": "https://github.com/MCtop4ik"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "ITMOv2",
+          "mode": "list",
+          "cachedResultName": "ITMOv2",
+          "cachedResultUrl": "https://github.com/MCtop4ik/ITMOv2"
+        },
+        "pullRequestNumber": "={{ $('Webhook').item.json.body.issue.number }}",
+        "event": "comment",
+        "body": "=Review already was made",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        512
+      ],
+      "id": "8ccb1383-7245-4445-bb48-c9e3e39287fc",
+      "name": "Write that review was made",
+      "webhookId": "91db546a-5dc3-4632-ad2d-47c83eedb660",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const diffText = $input.first().json.data; // или .body, зависит от HTTP-ноды\nconst lines = diffText.split('\\n');\nconst addedLines = [];\nlet currentPath = null;\nlet newLineNum = 0;\n\nfor (const line of lines) {\n  if (line.startsWith('+++ b/')) {\n    currentPath = line.slice(6); // убираем \"+++ b/\"\n  } else if (line.startsWith('@@')) {\n    // Формат: @@ -old,count +new,count @@\n    const match = line.match(/\\+(\\d+)(?:,\\d+)?/);\n    if (match) newLineNum = parseInt(match[1], 10);\n  } else if (currentPath && line.startsWith('+') && !line.startsWith('+++')) {\n    // Это добавленная строка\n    addedLines.push({\n      json: {\n        path: currentPath,\n        line: newLineNum,\n        content: line.slice(1) // сам код без +\n      }\n    });\n    newLineNum++;\n  } else if (currentPath && (line.startsWith(' ') || line.startsWith('-'))) {\n    // Контекст или удаление — номер в новой версии сдвигается только для контекста\n    if (line.startsWith(' ')) newLineNum++;\n  }\n}\n\nreturn [{\n  json: {\n    addedLines: addedLines // Возвращаем ОДИН айтем, внутри которого массив всех строк\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -80
+      ],
+      "id": "aadd8658-3c3e-4c2e-b630-f88d6fe9d2b3",
+      "name": "GetLines"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Берем ответ от агента\nconst rawOutput = $input.first().json.output;\n\n// Очищаем от возможных markdown-тегов (```json ... ```)\nconst cleaned = rawOutput.replace(/```json|```/g, '').trim();\n\nlet commentsArray = [];\n\ntry {\n  commentsArray = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error(\"Модель вернула невалидный JSON: \" + rawOutput);\n}\n\n// Обрабатываем каждый комментарий: добавляем пометку AI и side: \"RIGHT\"\nconst updatedComments = commentsArray.map(c => {\n  return {\n    path: c.path,\n    line: c.line,\n    side: \"RIGHT\", // Обязательно для привязки к новой версии файла\n    body: `🤖 **Сгенерировано AI:**\\n\\n${c.body}` // Добавляем пометку\n  };\n});\n\n// Возвращаем один объект, где comments — это массив\nreturn [{\n  json: {\n    comments: updatedComments\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        16
+      ],
+      "id": "d9f2183c-c32e-45eb-b383-2902993df415",
+      "name": "ParseModelAnswer"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/MCtop4ik/ITMOv2/pulls/{{ $('Webhook').item.json.body.issue.number }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        800,
+        16
+      ],
+      "id": "d30df8b5-ef41-45ee-9fcb-f5ccd7e01ea2",
+      "name": "Get SHA",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Webhook').item.json.body.repository.owner.login }}/{{ $('Webhook').item.json.body.repository.name }}/pulls/{{ $('Webhook').item.json.body.issue.number }}/reviews",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  commit_id: $('Get SHA').item.json.head.sha,\n  event: \"COMMENT\",\n  body: \"🤖 AI Code Review completed.\",\n  comments: $('ParseModelAnswer').item.json.comments\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1008,
+        16
+      ],
+      "id": "4531f987-0311-460b-972d-55a83c362337",
+      "name": "POST comments",
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior Python developer.\n\nHere is the list of added lines with their exact file paths and line numbers in the new file:\n{{ JSON.stringify($('GetLines').item.json.addedLines) }}\nHere is the full diff:\n{{ $('Get file\\'s PR info').item.json.data }}\n\nMake a code review ONLY for the lines provided in the list above.\nReturn ONLY a JSON array. Each object must have:\n- \"path\": exact file path\n- \"line\": exact line number from the list\n- \"body\": your review comment\n\nExample: [{\"path\": \"practices/practice_07/b.py\", \"line\": 2, \"body\": \"Using eval() is dangerous...\"}]",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "id": "2d0878c2-e781-478a-bf73-9551e26fe9bd",
+      "name": "Code Review Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        240,
+        32
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ucNaZs8YlNpzIRbb",
+          "mode": "list",
+          "cachedResultName": "Reviewed PRs",
+          "cachedResultUrl": "/projects/0spQGeayGgE9fWmU/datatables/ucNaZs8YlNpzIRbb"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pr_id",
+              "keyValue": "={{ $json.body.issue.number }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        512
+      ],
+      "id": "bac444fd-fd4d-43d5-9aac-ba04ece76243",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "8975b138-ed01-4008-b2d1-880157e90f75",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -736,
+        464
+      ],
+      "id": "b04f0185-a628-4004-a2bd-4577527bcbeb",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ucNaZs8YlNpzIRbb",
+          "mode": "list",
+          "cachedResultName": "Reviewed PRs",
+          "cachedResultUrl": "/projects/0spQGeayGgE9fWmU/datatables/ucNaZs8YlNpzIRbb"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pr_id",
+              "keyValue": "={{ $json.body.issue.number }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -944,
+        128
+      ],
+      "id": "190367f8-c193-41fe-b0a3-d6352f779d76",
+      "name": "If row does not exist"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        304
+      ],
+      "id": "3108d71d-684a-4456-9b13-f40faf9ef497",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "1df9534e-1faf-43d7-8096-2520bde61c16",
+              "leftValue": "={{ $json.body.issue.state }}",
+              "rightValue": "=open",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        -1200,
+        144
+      ],
+      "id": "cc544d00-33ea-4631-a818-9bd0bec711a7",
+      "name": "If PR is Open"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior Python developer.\n\nHere is the list of added lines with their exact file paths and line numbers in the new file:\n{{ JSON.stringify($('GetLines another').item.json.addedLines) }}\nHere is the full diff:\n{{ $('Get file\\'s PR info another').item.json.data }}\n\nMake a code review ONLY for the lines provided in the list above.\nReturn ONLY a JSON array. Each object must have:\n- \"path\": exact file path\n- \"line\": exact line number from the list\n- \"body\": your review comment\n\nExample: [{\"path\": \"practices/practice_07/b.py\", \"line\": 2, \"body\": \"Using eval() is dangerous...\"}]",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "id": "8d826e16-d849-4f79-8d61-29d6487e5a68",
+      "name": "Another Code Review Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        288,
+        656
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.issue.pull_request.diff_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3.diff"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2bd61e3-7453-45c6-8948-305e27cf0b68",
+      "name": "Get file's PR info another",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -160,
+        608
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "githubApi": {
+          "id": "IXcToQnZ6TNoCNUR",
+          "name": "GitHub account 41"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const diffText = $input.first().json.data; // или .body, зависит от HTTP-ноды\nconst lines = diffText.split('\\n');\nconst addedLines = [];\nlet currentPath = null;\nlet newLineNum = 0;\n\nfor (const line of lines) {\n  if (line.startsWith('+++ b/')) {\n    currentPath = line.slice(6); // убираем \"+++ b/\"\n  } else if (line.startsWith('@@')) {\n    // Формат: @@ -old,count +new,count @@\n    const match = line.match(/\\+(\\d+)(?:,\\d+)?/);\n    if (match) newLineNum = parseInt(match[1], 10);\n  } else if (currentPath && line.startsWith('+') && !line.startsWith('+++')) {\n    // Это добавленная строка\n    addedLines.push({\n      json: {\n        path: currentPath,\n        line: newLineNum,\n        content: line.slice(1) // сам код без +\n      }\n    });\n    newLineNum++;\n  } else if (currentPath && (line.startsWith(' ') || line.startsWith('-'))) {\n    // Контекст или удаление — номер в новой версии сдвигается только для контекста\n    if (line.startsWith(' ')) newLineNum++;\n  }\n}\n\nreturn [{\n  json: {\n    addedLines: addedLines // Возвращаем ОДИН айтем, внутри которого массив всех строк\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        544
+      ],
+      "id": "2777fe9b-6694-4495-b545-91ad0bf31630",
+      "name": "GetLines another"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        288,
+        848
+      ],
+      "id": "c052f028-ff94-470d-a83b-662487877a82",
+      "name": "DeepSeek Chat Model another",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "rbNPxJS3WKgQKY5U",
+          "name": "DeepSeek account 4"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Code Review Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If PR is Open",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get file's PR info": {
+      "main": [
+        [
+          {
+            "node": "GetLines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get file's PR info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get file's PR info another",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Add Label to PR1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetLines": {
+      "main": [
+        [
+          {
+            "node": "Code Review Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseModelAnswer": {
+      "main": [
+        [
+          {
+            "node": "Get SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SHA": {
+      "main": [
+        [
+          {
+            "node": "POST comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST comments": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Review Agent": {
+      "main": [
+        [
+          {
+            "node": "ParseModelAnswer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Write that review was made",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If row does not exist": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If PR is Open": {
+      "main": [
+        [
+          {
+            "node": "If row does not exist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Another Code Review Agent": {
+      "main": [
+        [
+          {
+            "node": "ParseModelAnswer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get file's PR info another": {
+      "main": [
+        [
+          {
+            "node": "GetLines another",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetLines another": {
+      "main": [
+        [
+          {
+            "node": "Another Code Review Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model another": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Another Code Review Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6de6a9f7-ebf0-409b-a463-bbebd0f6247e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68dbbb4e8fa686c3fd4e9982ade6836edb66976f207553e7ac22df961581c78c"
+  },
+  "nodeGroups": [],
+  "id": "ykoAr2M12QeCDRUx",
+  "tags": []
+}
